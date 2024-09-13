@@ -2,117 +2,220 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Hovorka Model Simulation with Two Insulin Boluses</title>
+    <title>Hovorka Model Simulation - Adjusted Layout</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        /* Enhanced CSS Styles */
+
+html, body {
+    overflow: hidden;
+    height: 100%;
+    overscroll-behavior: none;
+}
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 10px;
+            background-color: #f4f4f4;
+            color: #333;
         }
+
         h1, h2 {
             text-align: center;
-        }
-        #controls {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        .slider-container {
-            margin-top: 20px;
-        }
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-        .slider-label span {
-            font-weight: bold;
-        }
-        input[type="range"] {
-            width: 100%;
-        }
-        canvas {
-            display: block;
-            margin: 30px auto;
-            max-width: 100%;
-            border: 1px solid #ccc;
-        }
-        .legend {
-            display: flex;
-            justify-content: center;
-            margin-top: -20px;
+            color: #2c3e50;
             margin-bottom: 20px;
         }
-        .legend-item {
-            margin: 0 10px;
-            font-size: 14px;
+
+        #controls {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 10px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding-bottom: 20px;
         }
+
+        .slider-container {
+            margin-top: 10px;
+        }
+
+        .slider-label {
+            margin-bottom: 5px;
+        }
+
+        .slider-label span {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 3px;
+            color: #34495e;
+            font-size: 11px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #d3d3d3;
+            border-radius: 5px;
+            outline: none;
+            margin: 0;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+            margin-top: -6px;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #3498db;
+            cursor: pointer;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type="range"]:active::-webkit-slider-thumb {
+            background: #2980b9;
+        }
+
+        input[type="range"]:active::-moz-range-thumb {
+            background: #2980b9;
+        }
+
+        #combinedChart {
+            display: block;
+            margin: 20px auto;
+            width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            background-color: #ffffff;
+            border-radius: 8px;
+            max-width: 800px; /* Restrict canvas width on desktop */
+        }
+
+        .legend {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: -10px;
+            margin-bottom: 20px;
+        }
+
+        .legend-item {
+            margin: 5px 15px;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
         .legend-color {
             display: inline-block;
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             margin-right: 5px;
             vertical-align: middle;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                margin: 5px;
+            }
+
+            h1, h2 {
+                font-size: 1em;
+            }
+
+            .slider-container {
+                margin-top: 10px;
+            }
+
+            .slider-label span {
+                font-size: 11px;
+            }
+
+            .legend-item {
+                font-size: 12px;
+            }
+
+            #combinedChart {
+                max-width: 100%;
+            }
+
+            .legend {
+                max-width: 100%;
+            }
         }
     </style>
 </head>
 <body>
-
-    <h1>Hovorka Model Simulation</h1>
     <div id="controls">
-        <h2>Adjust Meal and Insulin Parameters</h2>
-
+        <!-- Existing sliders -->
         <div class="slider-container">
             <div class="slider-label">
-                <span>Carbohydrate Content (grams): <span id="CHOValue">60</span></span>
+                <span>Carbohydrate Content (grams): <bla id="CHOValue">60</bla></span>
+                <input type="range" id="CHO" min="10" max="200" step="1" value="60">
             </div>
-            <input type="range" id="CHO" min="10" max="200" step="1" value="60">
         </div>
 
         <div class="slider-container">
             <div class="slider-label">
-                <span>Meal Time (minutes): <span id="mealTimeValue">30</span></span>
+                <span>Meal Time (minutes): <bla id="mealTimeValue">30</bla></span>
+                <input type="range" id="mealTime" min="0" max="240" step="1" value="30">
             </div>
-            <input type="range" id="mealTime" min="0" max="240" step="1" value="30">
         </div>
 
         <div class="slider-container">
             <div class="slider-label">
-                <span>Absorption Duration (minutes): <span id="absorptionDurationValue">60</span></span>
+                <span>Absorption Duration (minutes): <bla id="absorptionDurationValue">60</bla></span>
+                <input type="range" id="absorptionDuration" min="10" max="240" step="10" value="60">
             </div>
-            <input type="range" id="absorptionDuration" min="10" max="240" step="10" value="60">
+        </div>
+
+        <!-- First insulin bolus -->
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Insulin Bolus Time (minutes): <bla id="bolusTimeValue">30</bla></span>
+                <input type="range" id="bolusTime" min="0" max="240" step="1" value="30">
+            </div>
         </div>
 
         <div class="slider-container">
             <div class="slider-label">
-                <span>Insulin Bolus Time (minutes): <span id="bolusTimeValue">30</span></span>
+                <span>Insulin Bolus Amount (mU): <bla id="bolusAmountValue">6000</bla></span>
+                <input type="range" id="bolusAmount" min="0" max="10000" step="100" value="6000">
             </div>
-            <input type="range" id="bolusTime" min="0" max="240" step="1" value="30">
+        </div>
+
+        <!-- Second insulin bolus -->
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Second Insulin Bolus Time (minutes): <bla id="bolusTime2Value">60</bla></span>
+                <input type="range" id="bolusTime2" min="0" max="240" step="1" value="60">
+            </div>
         </div>
 
         <div class="slider-container">
             <div class="slider-label">
-                <span>Insulin Bolus Amount (mU): <span id="bolusAmountValue">6000</span></span>
+                <span>Second Insulin Bolus Amount (mU): <bla id="bolusAmount2Value">0</bla></span>
+                <input type="range" id="bolusAmount2" min="0" max="10000" step="100" value="0">
             </div>
-            <input type="range" id="bolusAmount" min="0" max="10000" step="100" value="6000">
-        </div>
-
-        <!-- New sliders for the second insulin bolus -->
-        <div class="slider-container">
-            <div class="slider-label">
-                <span>Second Insulin Bolus Time (minutes): <span id="bolusTime2Value">60</span></span>
-            </div>
-            <input type="range" id="bolusTime2" min="0" max="240" step="1" value="60">
-        </div>
-
-        <div class="slider-container">
-            <div class="slider-label">
-                <span>Second Insulin Bolus Amount (mU): <span id="bolusAmount2Value">0</span></span>
-            </div>
-            <input type="range" id="bolusAmount2" min="0" max="10000" step="100" value="0">
         </div>
 
     </div>
 
-    <canvas id="combinedChart" width="800" height="400"></canvas>
+    <canvas id="combinedChart"></canvas>
     <div class="legend">
         <div class="legend-item">
             <div class="legend-color" style="background-color: blue;"></div> Blood Glucose (mg/dL)
@@ -123,7 +226,7 @@
     </div>
 
     <script>
-        // Hovorka Model Simulation in JavaScript
+        // Hovorka Model Simulation in JavaScript with Adjusted Layout
 
         // Variables to store slider elements and their display values
         const sliders = {
@@ -146,6 +249,10 @@
             bolusAmount2Value: document.getElementById('bolusAmount2Value')
         };
 
+        // Get the canvas and context
+        const canvas = document.getElementById('combinedChart');
+        const ctx = canvas.getContext('2d');
+
         // Global variables to store static y-axis limits
         let glucoseYMin = 70; // Set initial values
         let glucoseYMax = 130;
@@ -163,12 +270,53 @@
             sliderValues.bolusAmount2Value.textContent = sliders.bolusAmount2.value;
         }
 
+        // Function to update URL query parameters
+        function updateURLParameters() {
+            const params = new URLSearchParams(window.location.search);
+            Object.keys(sliders).forEach(function(key) {
+                params.set(key, sliders[key].value);
+            });
+            const newURL = `${window.location.pathname}?${params.toString()}`;
+            window.history.replaceState({}, '', newURL);
+        }
+
+        // Function to load parameters from URL and set sliders
+        function loadParametersFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            Object.keys(sliders).forEach(function(key) {
+                if (params.has(key)) {
+                    sliders[key].value = params.get(key);
+                }
+            });
+        }
+
         // Event listeners for sliders
         Object.keys(sliders).forEach(function(key) {
             sliders[key].addEventListener('input', function() {
                 updateSliderValues();
                 runSimulation();
+                updateURLParameters();
             });
+        });
+
+        // Function to resize the canvas
+        function resizeCanvas() {
+            // Set canvas dimensions based on the container width
+            let containerWidth = document.getElementById('controls').offsetWidth;
+            canvas.width = containerWidth;
+            canvas.height = containerWidth * 0.6; // Adjust height as needed
+
+            // Restrict canvas width on desktop
+            if (window.innerWidth >= 768) {
+                canvas.width = 800; // Max width
+                canvas.height = 480; // Maintain aspect ratio
+            }
+        }
+
+        // Add event listener for window resize
+        window.addEventListener('resize', function() {
+            resizeCanvas();
+            runSimulation();
         });
 
         function hovorkaModel(y, t, params) {
@@ -274,6 +422,9 @@
         }
 
         function runSimulation() {
+            // Resize canvas before drawing
+            resizeCanvas();
+
             // Get input values
             let CHO = parseFloat(sliders.CHO.value);
             let tMeal = parseFloat(sliders.mealTime.value);
@@ -353,17 +504,14 @@
         }
 
         function plotCombinedChart(time, G, I, tMeal, bolusTime, bolusTime2) {
-            let canvas = document.getElementById('combinedChart');
-            let ctx = canvas.getContext('2d');
-
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // Set margins for axes labels
             let marginLeft = 60;
             let marginRight = 60;
-            let marginBottom = 40;
-            let marginTop = 20;
+            let marginBottom = 50;
+            let marginTop = 30;
 
             // Drawing area dimensions
             let plotWidth = canvas.width - marginLeft - marginRight;
@@ -396,12 +544,16 @@
             }
             let scaleY_I = plotHeight / (maxI - minI);
 
+            // Draw background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(marginLeft, marginTop, plotWidth, plotHeight);
+
             // Draw axes
             ctx.beginPath();
             ctx.moveTo(marginLeft, marginTop);
             ctx.lineTo(marginLeft, canvas.height - marginBottom);
             ctx.lineTo(canvas.width - marginRight, canvas.height - marginBottom);
-            ctx.strokeStyle = 'black';
+            ctx.strokeStyle = '#333';
             ctx.lineWidth = 1;
             ctx.stroke();
 
@@ -440,6 +592,7 @@
             ctx.setLineDash([]);
 
             // Draw insulin bolus time markers
+            // First bolus
             let bolusX = marginLeft + (bolusTime - minX) * scaleX;
             ctx.beginPath();
             ctx.moveTo(bolusX, marginTop);
@@ -449,6 +602,7 @@
             ctx.stroke();
             ctx.setLineDash([]);
 
+            // Second bolus
             let bolusX2 = marginLeft + (bolusTime2 - minX) * scaleX;
             ctx.beginPath();
             ctx.moveTo(bolusX2, marginTop);
@@ -459,14 +613,14 @@
             ctx.setLineDash([]);
 
             // Add axis labels
-            ctx.fillStyle = 'black';
-            ctx.font = '16px Arial';
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
             ctx.textAlign = 'center';
-            ctx.fillText('Time (minutes)', marginLeft + plotWidth / 2, canvas.height - 10);
+            ctx.fillText('Time (minutes)', marginLeft + plotWidth / 2, canvas.height - 15);
 
             // Left y-axis label (glucose)
             ctx.save();
-            ctx.translate(20, marginTop + plotHeight / 2);
+            ctx.translate(15, marginTop + plotHeight / 2);
             ctx.rotate(-Math.PI / 2);
             ctx.textAlign = 'center';
             ctx.fillText('Blood Glucose (mg/dL)', 0, 0);
@@ -474,7 +628,7 @@
 
             // Right y-axis label (insulin)
             ctx.save();
-            ctx.translate(canvas.width - 20, marginTop + plotHeight / 2);
+            ctx.translate(canvas.width - 15, marginTop + plotHeight / 2);
             ctx.rotate(Math.PI / 2);
             ctx.textAlign = 'center';
             ctx.fillText('Plasma Insulin (mU/L)', 0, 0);
@@ -521,9 +675,12 @@
             }
         }
 
-        // Initialize slider values and run initial simulation
+        // Initialize canvas size, load parameters, update slider values, and run initial simulation
+        resizeCanvas();
+        loadParametersFromURL();
         updateSliderValues();
         runSimulation();
+        updateURLParameters();
     </script>
 </body>
 </html>
