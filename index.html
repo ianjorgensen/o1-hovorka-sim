@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hovorka Model Simulation with Two Insulin Boluses</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        #controls {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .slider-container {
+            margin-top: 20px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .slider-label span {
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+        }
+        canvas {
+            display: block;
+            margin: 30px auto;
+            max-width: 100%;
+            border: 1px solid #ccc;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: -20px;
+            margin-bottom: 20px;
+        }
+        .legend-item {
+            margin: 0 10px;
+            font-size: 14px;
+        }
+        .legend-color {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Hovorka Model Simulation</h1>
+    <div id="controls">
+        <h2>Adjust Meal and Insulin Parameters</h2>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Carbohydrate Content (grams): <span id="CHOValue">60</span></span>
+            </div>
+            <input type="range" id="CHO" min="10" max="200" step="1" value="60">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Meal Time (minutes): <span id="mealTimeValue">30</span></span>
+            </div>
+            <input type="range" id="mealTime" min="0" max="240" step="1" value="30">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Absorption Duration (minutes): <span id="absorptionDurationValue">60</span></span>
+            </div>
+            <input type="range" id="absorptionDuration" min="10" max="240" step="10" value="60">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Insulin Bolus Time (minutes): <span id="bolusTimeValue">30</span></span>
+            </div>
+            <input type="range" id="bolusTime" min="0" max="240" step="1" value="30">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Insulin Bolus Amount (mU): <span id="bolusAmountValue">6000</span></span>
+            </div>
+            <input type="range" id="bolusAmount" min="0" max="10000" step="100" value="6000">
+        </div>
+
+        <!-- New sliders for the second insulin bolus -->
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Second Insulin Bolus Time (minutes): <span id="bolusTime2Value">60</span></span>
+            </div>
+            <input type="range" id="bolusTime2" min="0" max="240" step="1" value="60">
+        </div>
+
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Second Insulin Bolus Amount (mU): <span id="bolusAmount2Value">0</span></span>
+            </div>
+            <input type="range" id="bolusAmount2" min="0" max="10000" step="100" value="0">
+        </div>
+
+    </div>
+
+    <canvas id="combinedChart" width="800" height="400"></canvas>
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: blue;"></div> Blood Glucose (mg/dL)
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background-color: green;"></div> Plasma Insulin (mU/L)
+        </div>
+    </div>
+
+    <script>
+        // Hovorka Model Simulation in JavaScript
+
+        // Variables to store slider elements and their display values
+        const sliders = {
+            CHO: document.getElementById('CHO'),
+            mealTime: document.getElementById('mealTime'),
+            absorptionDuration: document.getElementById('absorptionDuration'),
+            bolusTime: document.getElementById('bolusTime'),
+            bolusAmount: document.getElementById('bolusAmount'),
+            bolusTime2: document.getElementById('bolusTime2'),
+            bolusAmount2: document.getElementById('bolusAmount2')
+        };
+
+        const sliderValues = {
+            CHOValue: document.getElementById('CHOValue'),
+            mealTimeValue: document.getElementById('mealTimeValue'),
+            absorptionDurationValue: document.getElementById('absorptionDurationValue'),
+            bolusTimeValue: document.getElementById('bolusTimeValue'),
+            bolusAmountValue: document.getElementById('bolusAmountValue'),
+            bolusTime2Value: document.getElementById('bolusTime2Value'),
+            bolusAmount2Value: document.getElementById('bolusAmount2Value')
+        };
+
+        // Global variables to store static y-axis limits
+        let glucoseYMin = 70; // Set initial values
+        let glucoseYMax = 130;
+        let insulinYMin = 0;
+        let insulinYMax = 20;
+
+        // Function to update display values
+        function updateSliderValues() {
+            sliderValues.CHOValue.textContent = sliders.CHO.value;
+            sliderValues.mealTimeValue.textContent = sliders.mealTime.value;
+            sliderValues.absorptionDurationValue.textContent = sliders.absorptionDuration.value;
+            sliderValues.bolusTimeValue.textContent = sliders.bolusTime.value;
+            sliderValues.bolusAmountValue.textContent = sliders.bolusAmount.value;
+            sliderValues.bolusTime2Value.textContent = sliders.bolusTime2.value;
+            sliderValues.bolusAmount2Value.textContent = sliders.bolusAmount2.value;
+        }
+
+        // Event listeners for sliders
+        Object.keys(sliders).forEach(function(key) {
+            sliders[key].addEventListener('input', function() {
+                updateSliderValues();
+                runSimulation();
+            });
+        });
+
+        function hovorkaModel(y, t, params) {
+            // State variables
+            // y = [G, X, I]
+            let G = y[0];   // Glucose concentration (mg/dL)
+            let X = y[1];   // Insulin action on glucose utilization
+            let I = y[2];   // Plasma insulin concentration (mU/L)
+
+            // Parameters
+            let EGP0 = params.EGP0;
+            let F01 = params.F01;
+            let SI = params.SI;
+            let ke = params.ke;
+            let kabs = params.kabs;
+            let Vg = params.Vg;
+            let Vi = params.Vi;
+            let Ib = params.Ib;
+            let kx = params.kx;
+
+            // Meal absorption
+            let Ra = mealAbsorption(t, params);
+
+            // Insulin infusion
+            let U = insulinInfusion(t, params);
+
+            // Differential equations
+            // Glucose kinetics
+            let dGdt = - (F01 + X) * G + EGP0 * (1 - X) + Ra;
+
+            // Insulin action
+            let dXdt = - kx * X + kx * SI * (I - Ib);
+
+            // Insulin kinetics
+            let dIdt = - ke * (I - Ib) + (kabs * U) / Vi;
+
+            return [dGdt, dXdt, dIdt];
+        }
+
+        function mealAbsorption(t, params) {
+            let CHO = params.CHO;
+            let tMeal = params.tMeal;
+            let D = params.D;
+
+            if (t >= tMeal && t <= tMeal + D) {
+                return (CHO * 1000) / D; // Convert grams to mg and distribute over duration
+            } else {
+                return 0;
+            }
+        }
+
+        function insulinInfusion(t, params) {
+            let bolusTime = params.bolusTime;
+            let bolusAmount = params.bolusAmount;
+            let bolusTime2 = params.bolusTime2;
+            let bolusAmount2 = params.bolusAmount2;
+
+            let U = 0;
+
+            // First bolus
+            if (Math.abs(t - bolusTime) < 0.5) {
+                U += bolusAmount; // mU delivered at bolus time
+            }
+
+            // Second bolus
+            if (Math.abs(t - bolusTime2) < 0.5) {
+                U += bolusAmount2; // mU delivered at second bolus time
+            }
+
+            return U;
+        }
+
+        function rungeKutta4(f, y0, t0, t1, dt, params) {
+            let y = y0.slice();
+            let t = t0;
+            let result = [];
+            while (t <= t1) {
+                result.push({ t: t, y: y.slice() });
+                let k1 = f(y, t, params).map(val => val * dt);
+                let yk2 = y.map((val, i) => val + k1[i] / 2);
+                let k2 = f(yk2, t + dt / 2, params).map(val => val * dt);
+                let yk3 = y.map((val, i) => val + k2[i] / 2);
+                let k3 = f(yk3, t + dt / 2, params).map(val => val * dt);
+                let yk4 = y.map((val, i) => val + k3[i]);
+                let k4 = f(yk4, t + dt, params).map(val => val * dt);
+                y = y.map((val, i) => val + (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]) / 6);
+                t += dt;
+            }
+            return result;
+        }
+
+        // Exponential smoothing function
+        function exponentialSmoothing(data, alpha) {
+            let smoothedData = [];
+            let S_prev = data[0]; // Initialize with the first data point
+            smoothedData.push(S_prev);
+            for (let i = 1; i < data.length; i++) {
+                let S_curr = alpha * data[i] + (1 - alpha) * S_prev;
+                smoothedData.push(S_curr);
+                S_prev = S_curr;
+            }
+            return smoothedData;
+        }
+
+        function runSimulation() {
+            // Get input values
+            let CHO = parseFloat(sliders.CHO.value);
+            let tMeal = parseFloat(sliders.mealTime.value);
+            let D = parseFloat(sliders.absorptionDuration.value);
+            let bolusTime = parseFloat(sliders.bolusTime.value);
+            let bolusAmount = parseFloat(sliders.bolusAmount.value);
+            let bolusTime2 = parseFloat(sliders.bolusTime2.value);
+            let bolusAmount2 = parseFloat(sliders.bolusAmount2.value);
+
+            // Simulation parameters
+            let params = {
+                EGP0: 2.1,       // mg/dL/min
+                F01: 0.0097,     // 1/min
+                SI: 51.2e-4,     // Insulin sensitivity
+                ke: 0.138,       // 1/min
+                kabs: 0.03,      // 1/min
+                Vg: 1.88,        // L
+                Vi: 0.05,        // L
+                Ib: 10.0,        // Baseline insulin (mU/L)
+                kx: 0.05,        // 1/min
+                CHO: CHO,        // grams
+                tMeal: tMeal,    // minutes
+                D: D,            // minutes
+                bolusTime: bolusTime,           // minutes
+                bolusAmount: bolusAmount,       // mU
+                bolusTime2: bolusTime2,         // minutes
+                bolusAmount2: bolusAmount2      // mU
+            };
+
+            // Initial conditions
+            let G0 = 90.0;    // mg/dL
+            let X0 = 0.0;
+            let I0 = params.Ib;
+
+            let y0 = [G0, X0, I0];
+
+            // Time settings
+            let t0 = 0;
+            let t1 = 240;   // Simulate for 4 hours (240 minutes)
+            let dt = 1;     // 1-minute intervals
+
+            // Run simulation
+            let simulation = rungeKutta4(hovorkaModel, y0, t0, t1, dt, params);
+
+            // Extract results
+            let time = simulation.map(point => point.t);
+            let G = simulation.map(point => point.y[0]);
+            let I = simulation.map(point => point.y[2]);
+
+            // Apply exponential smoothing to G and I
+            let alpha = 0.2; // Smoothing factor (adjust between 0 and 1)
+            let G_smoothed = exponentialSmoothing(G, alpha);
+            let I_smoothed = exponentialSmoothing(I, alpha);
+
+            // Update static y-axis limits for glucose
+            let currentGlucoseMin = Math.min(...G_smoothed);
+            let currentGlucoseMax = Math.max(...G_smoothed);
+            if (currentGlucoseMin < glucoseYMin) {
+                glucoseYMin = currentGlucoseMin;
+            }
+            if (currentGlucoseMax > glucoseYMax) {
+                glucoseYMax = currentGlucoseMax;
+            }
+
+            // Update static y-axis limits for insulin
+            let currentInsulinMin = Math.min(...I_smoothed);
+            let currentInsulinMax = Math.max(...I_smoothed);
+            if (currentInsulinMin < insulinYMin) {
+                insulinYMin = currentInsulinMin;
+            }
+            if (currentInsulinMax > insulinYMax) {
+                insulinYMax = currentInsulinMax;
+            }
+
+            // Plot combined results using smoothed data
+            plotCombinedChart(time, G_smoothed, I_smoothed, tMeal, bolusTime, bolusTime2);
+        }
+
+        function plotCombinedChart(time, G, I, tMeal, bolusTime, bolusTime2) {
+            let canvas = document.getElementById('combinedChart');
+            let ctx = canvas.getContext('2d');
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Set margins for axes labels
+            let marginLeft = 60;
+            let marginRight = 60;
+            let marginBottom = 40;
+            let marginTop = 20;
+
+            // Drawing area dimensions
+            let plotWidth = canvas.width - marginLeft - marginRight;
+            let plotHeight = canvas.height - marginTop - marginBottom;
+
+            // X-axis scaling
+            let minX = 0;
+            let maxX = 240;
+            let scaleX = plotWidth / (maxX - minX);
+
+            // Y-axis scaling for glucose (left y-axis)
+            let minG = glucoseYMin;
+            let maxG = glucoseYMax;
+
+            // Prevent division by zero
+            if (maxG - minG < 1e-6) {
+                maxG += 1;
+                minG -= 1;
+            }
+            let scaleY_G = plotHeight / (maxG - minG);
+
+            // Y-axis scaling for insulin (right y-axis)
+            let minI = insulinYMin;
+            let maxI = insulinYMax;
+
+            // Prevent division by zero
+            if (maxI - minI < 1e-6) {
+                maxI += 1;
+                minI -= 1;
+            }
+            let scaleY_I = plotHeight / (maxI - minI);
+
+            // Draw axes
+            ctx.beginPath();
+            ctx.moveTo(marginLeft, marginTop);
+            ctx.lineTo(marginLeft, canvas.height - marginBottom);
+            ctx.lineTo(canvas.width - marginRight, canvas.height - marginBottom);
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Plot glucose curve
+            ctx.beginPath();
+            ctx.moveTo(marginLeft, canvas.height - marginBottom - (G[0] - minG) * scaleY_G);
+            for (let i = 1; i < time.length; i++) {
+                let x = marginLeft + (time[i] - minX) * scaleX;
+                let y = canvas.height - marginBottom - (G[i] - minG) * scaleY_G;
+                ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Plot insulin curve
+            ctx.beginPath();
+            ctx.moveTo(marginLeft, canvas.height - marginBottom - (I[0] - minI) * scaleY_I);
+            for (let i = 1; i < time.length; i++) {
+                let x = marginLeft + (time[i] - minX) * scaleX;
+                let y = canvas.height - marginBottom - (I[i] - minI) * scaleY_I;
+                ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = 'green';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw meal time marker
+            let mealX = marginLeft + (tMeal - minX) * scaleX;
+            ctx.beginPath();
+            ctx.moveTo(mealX, marginTop);
+            ctx.lineTo(mealX, canvas.height - marginBottom);
+            ctx.strokeStyle = 'red';
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw insulin bolus time markers
+            let bolusX = marginLeft + (bolusTime - minX) * scaleX;
+            ctx.beginPath();
+            ctx.moveTo(bolusX, marginTop);
+            ctx.lineTo(bolusX, canvas.height - marginBottom);
+            ctx.strokeStyle = 'orange';
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            let bolusX2 = marginLeft + (bolusTime2 - minX) * scaleX;
+            ctx.beginPath();
+            ctx.moveTo(bolusX2, marginTop);
+            ctx.lineTo(bolusX2, canvas.height - marginBottom);
+            ctx.strokeStyle = 'purple';
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Add axis labels
+            ctx.fillStyle = 'black';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Time (minutes)', marginLeft + plotWidth / 2, canvas.height - 10);
+
+            // Left y-axis label (glucose)
+            ctx.save();
+            ctx.translate(20, marginTop + plotHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Blood Glucose (mg/dL)', 0, 0);
+            ctx.restore();
+
+            // Right y-axis label (insulin)
+            ctx.save();
+            ctx.translate(canvas.width - 20, marginTop + plotHeight / 2);
+            ctx.rotate(Math.PI / 2);
+            ctx.textAlign = 'center';
+            ctx.fillText('Plasma Insulin (mU/L)', 0, 0);
+            ctx.restore();
+
+            // Add tick marks and labels for left y-axis (glucose)
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            let yTicks = 5;
+            for (let i = 0; i <= yTicks; i++) {
+                let yValue = minG + (maxG - minG) * (i / yTicks);
+                let yPos = canvas.height - marginBottom - (yValue - minG) * scaleY_G;
+                ctx.beginPath();
+                ctx.moveTo(marginLeft - 5, yPos);
+                ctx.lineTo(marginLeft, yPos);
+                ctx.stroke();
+                ctx.fillText(yValue.toFixed(1), marginLeft - 10, yPos);
+            }
+
+            // Add tick marks and labels for right y-axis (insulin)
+            ctx.textAlign = 'left';
+            for (let i = 0; i <= yTicks; i++) {
+                let yValue = minI + (maxI - minI) * (i / yTicks);
+                let yPos = canvas.height - marginBottom - (yValue - minI) * scaleY_I;
+                ctx.beginPath();
+                ctx.moveTo(canvas.width - marginRight, yPos);
+                ctx.lineTo(canvas.width - marginRight + 5, yPos);
+                ctx.stroke();
+                ctx.fillText(yValue.toFixed(1), canvas.width - marginRight + 10, yPos);
+            }
+
+            // Add tick marks and labels for x-axis
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            let xTicks = 8;
+            for (let i = 0; i <= xTicks; i++) {
+                let xValue = minX + (maxX - minX) * (i / xTicks);
+                let xPos = marginLeft + (xValue - minX) * scaleX;
+                ctx.beginPath();
+                ctx.moveTo(xPos, canvas.height - marginBottom);
+                ctx.lineTo(xPos, canvas.height - marginBottom + 5);
+                ctx.stroke();
+                ctx.fillText(xValue.toFixed(0), xPos, canvas.height - marginBottom + 5);
+            }
+        }
+
+        // Initialize slider values and run initial simulation
+        updateSliderValues();
+        runSimulation();
+    </script>
+</body>
+</html>
